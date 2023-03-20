@@ -83,7 +83,7 @@ with conn:
             logger.info(
                 f"Inserting user_name: {interaction.user} "
                 f"at this time: {time} "
-                f"with this movie time: {fix_title} "
+                f"with this movie title: {fix_title} "
                 f"with imdb_id: {id}"
             )
             logger.info(f"SQL insert: {sql} with values: {values}")
