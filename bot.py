@@ -29,14 +29,9 @@ client = commands.Bot(command_prefix='!', intents=discord.Intents.all())
 
 # https://www.youtube.com/@glowstik/videos < good reference
 
-version = "1.2.69.0"
-database = r"c:\Projects\movie_bot\movie_list.db"
+version = "1.2.69.1"
+database = r"C:\github\movie_bot\movie_list.db"
 logger.info('attempting db connection')
-
-# create a database connection
-# TODO https://imdb-api.com/pricing
-# TODO https://imdb-api.com/swagger/index.html
-# TODO add make counter
 
 conn = None
 try:
