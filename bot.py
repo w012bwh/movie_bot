@@ -104,12 +104,12 @@ with conn:
         message = f"The movie '{fix_title}' does not exist, add it. Bitch."
         curr = conn.cursor()
 
-        curr.execute("SELECT title FROM movie_table WHERE title = ?", [fix_title])
+        curr.execute("SELECT id, title FROM movie_table WHERE title = ?", [fix_title])
 
         does_movie_exist = curr.fetchall()
 
         if does_movie_exist:
-            message = f"the movie '{fix_title}' is already on the list. Bitch."
+            message = f"the movie {does_movie_exist} is already on the list. Bitch."
         await interaction.response.send_message(message)
 
 
