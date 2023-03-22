@@ -55,6 +55,7 @@ with conn:
     async def add_movie(interaction: discord.Interaction, movie: str):
         fix_title = movie.title()
         logger.info(f"user {interaction.user} used the add command for this movie {fix_title}")
+        await interaction.response.defer()
 
         curr = conn.cursor()
         curr.execute("SELECT title FROM movie_table WHERE title = ?", [fix_title])
@@ -71,28 +72,28 @@ with conn:
                 request = requests.get(url=url)
                 data = request.json()
                 logger.info(f"data: {data}")
-                id = data["results"][0]["id"]
+                imdb_id = data["results"][0]["id"]
 
             except:
                 logger.info(f"no imdb_id for that movie: {movie}")
-                id = None
+                imdb_id = None
 
             message = f"Thank you, {interaction.user.mention}, for adding '{fix_title}' to the list."
             sql = "INSERT INTO movie_table (user_name, insert_date, title, imdb_id) VALUES (?,?,?,?)"
-            values = (str(interaction.user), str(time), str(fix_title), str(id))
+            values = (str(interaction.user), str(time), str(fix_title), str(imdb_id))
             logger.info(
                 f"Inserting user_name: {interaction.user} "
                 f"at this time: {time} "
                 f"with this movie title: {fix_title} "
-                f"with imdb_id: {id}"
+                f"with imdb_id: {imdb_id}"
             )
             logger.info(f"SQL insert: {sql} with values: {values}")
             cur = conn.cursor()
             cur.execute(sql, values)
             conn.commit()
 
-        await interaction.response.defer(ephemeral=True)
-        await asyncio.sleep(5)
+        # await interaction.response.defer(ephemeral=True)
+        # await asyncio.sleep(5)
         await interaction.followup.send(message)
 
 
