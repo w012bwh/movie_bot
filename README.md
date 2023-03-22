@@ -18,3 +18,5 @@ bot commands:
   picks a movie given a user tagged in the command
 8) /remove
   after watching movie, this will set the movie to watch has true and not be displayed from /list
+9) /count
+   displays the total of movies added by all the users

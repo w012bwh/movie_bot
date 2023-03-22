@@ -132,6 +132,26 @@ with conn:
         await interaction.response.send_message(embed=embed)
 
 
+    @client.tree.command(name="count")
+    async def count_list(interaction: discord.Interaction):
+        logger.info(f"user {interaction.user} used the count command")
+        curr = conn.cursor()
+
+        curr.execute(f"SELECT user_name FROM usernames_table")
+        users_from_table = curr.fetchall()
+        description = ""
+
+        for user in users_from_table:
+            curr.execute("SELECT COUNT(user_name) FROM movie_table WHERE user_name = ?", user)
+            totals = curr.fetchall()
+            for total in totals:
+                description += f'{user[0]}: {total[0]}\n\n'
+
+        embed = discord.Embed(title="User Input Totals",
+                              description=description)
+        await interaction.response.send_message(embed=embed)
+
+
     @client.tree.command(name="list")
     async def list_movies_with_imdb(interaction: discord.Interaction):
         logger.info(f"user {interaction.user} used the list_imdb command")
