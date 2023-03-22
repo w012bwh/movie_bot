@@ -12,6 +12,7 @@ import sqlite3
 from datetime import datetime
 from discord.ext import commands
 from dotenv import load_dotenv
+from math import ceil
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 discord.utils.setup_logging()
@@ -54,6 +55,8 @@ with conn:
     @client.tree.command(name="add")
     async def add_movie(interaction: discord.Interaction, movie: str):
         fix_title = movie.title()
+        date_time = time.strftime("%d-%m-%Y %H:%M:%S")
+
         logger.info(f"user {interaction.user} used the add command for this movie {fix_title}")
         await interaction.response.defer()
 
@@ -80,10 +83,10 @@ with conn:
 
             message = f"Thank you, {interaction.user.mention}, for adding '{fix_title}' to the list."
             sql = "INSERT INTO movie_table (user_name, insert_date, title, imdb_id) VALUES (?,?,?,?)"
-            values = (str(interaction.user), str(time), str(fix_title), str(imdb_id))
+            values = (str(interaction.user), str(date_time), str(fix_title), str(imdb_id))
             logger.info(
                 f"Inserting user_name: {interaction.user} "
-                f"at this time: {time} "
+                f"at this time: {date_time} "
                 f"with this movie title: {fix_title} "
                 f"with imdb_id: {imdb_id}"
             )
@@ -92,8 +95,6 @@ with conn:
             cur.execute(sql, values)
             conn.commit()
 
-        # await interaction.response.defer(ephemeral=True)
-        # await asyncio.sleep(5)
         await interaction.followup.send(message)
 
 
@@ -110,28 +111,9 @@ with conn:
         does_movie_exist = curr.fetchall()
 
         if does_movie_exist:
-            message = f"the movie {does_movie_exist} is already on the list. Bitch."
+            for movie in does_movie_exist:
+                message = f"the movie {movie[0]}: {movie[1]} is already on the list. Bitch."
         await interaction.response.send_message(message)
-
-
-    @client.tree.command(name="list")
-    async def list_movies(interaction: discord.Interaction):
-        logger.info(f"user {interaction.user} used the list command")
-        curr = conn.cursor()
-
-        curr.execute("SELECT id, user_name, title FROM movie_table WHERE watched IS NULL")
-
-        movie_list = curr.fetchall()
-        logger.info("movie_list")
-        logger.info(movie_list)
-
-        description = ""
-        for movie in movie_list:
-            description += f'{movie[0]}: {movie[2]} added by {movie[1]}\n\n'
-
-        embed = discord.Embed(title="DMHS Movie List",
-                              description=description)
-        await interaction.response.send_message(embed=embed)
 
 
     @client.tree.command(name="watched_list")
@@ -139,7 +121,7 @@ with conn:
         logger.info(f"user {interaction.user} used the watched_list command")
         curr = conn.cursor()
 
-        curr.execute("SELECT id, user_name, title FROM movie_table WHERE watched = 'yes'")
+        curr.execute("SELECT id, user_name, title, removed_date FROM movie_table WHERE watched = 'yes'")
 
         movie_list = curr.fetchall()
         logger.info("movie_list")
@@ -147,17 +129,16 @@ with conn:
 
         description = ""
         for movie in movie_list:
-            description += f'{movie[0]}: {movie[2]} added by {movie[1]}\n\n'
+            description += f'{movie[0]}: {movie[2]} added by {movie[1]} and removed on {movie[3]}\n\n'
 
         embed = discord.Embed(title="DMHS Movie Watched List",
                               description=description)
         await interaction.response.send_message(embed=embed)
 
 
-    @client.tree.command(name="list_imdb")
+    @client.tree.command(name="list")
     async def list_movies_with_imdb(interaction: discord.Interaction):
         logger.info(f"user {interaction.user} used the list_imdb command")
-        message = "Please give it 10 minutes before using the add command after this command."
         curr = conn.cursor()
 
         curr.execute("SELECT id, user_name, title, imdb_id FROM movie_table WHERE watched IS NULL")
@@ -166,7 +147,9 @@ with conn:
         description = ""
         description_count = 0
         movie_total = len(movie_list)
+
         page_num = 1
+        page_max = (movie_total // 35) + 1
 
         for movie in movie_list:
             make_link = movie[2]
@@ -175,29 +158,35 @@ with conn:
 
             description += f'{movie[0]}: {make_link} added by {movie[1]}\n\n'
             description_count = description_count + 1
+            footer = f"Page {page_num} of {page_max}"
 
             if description_count == 35:
                 movie_total = movie_total - 35
                 description_count = 0
                 embed = discord.Embed(title="DMHS Movie List",
                                       description=description)
+                embed.set_footer(text=footer)
                 description = ""
 
                 if page_num == 1:
                     page_num += 1
+                    embed.set_footer(text=footer)
                     await interaction.response.send_message(embed=embed)
 
                 else:
+                    page_num += 1
+                    embed.set_footer(text=footer)
                     await interaction.followup.send(embed=embed)
 
             elif movie_total < 35:
                 movie_total = movie_total - 1
 
                 if movie_total == 0:
+                    page_num += 1
                     embed = discord.Embed(title="DMHS Movie List",
                                           description=description)
+                    embed.set_footer(text=footer)
                     await interaction.followup.send(embed=embed)
-                    await interaction.followup.send(message)
 
 
     @client.tree.command(name="complete_list")
@@ -330,13 +319,17 @@ with conn:
 
     @client.tree.command(name="remove")
     async def remove_movie(interaction: discord.Interaction, movie: int):
+        date_time = time.strftime("%d-%m-%Y %H:%M:%S")
+
         logger.info(f"user {interaction.user} removed {movie} from the list.")
         logger.info(f"Removing {movie} from list")
         cur = conn.cursor()
-        cur.execute("UPDATE movie_table SET watched = ? WHERE id = ?", ('yes', movie))
+        cur.execute("UPDATE movie_table SET watched = ?, removed_date = ? WHERE id = ?", ['yes', date_time, movie])
         conn.commit()
 
-        await interaction.response.send_message(f"{interaction.user} removed {movie} from the list.")
+        message = f"{interaction.user} removed {movie} from the list at this time {date_time}."
+
+        await interaction.response.send_message(message)
 
 
     @client.event
