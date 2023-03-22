@@ -1,8 +1,5 @@
 # bot.py
-import asyncio
 import discord
-import json
-import logging
 import logging.handlers
 import os
 import pytz
@@ -12,7 +9,6 @@ import sqlite3
 from datetime import datetime
 from discord.ext import commands
 from dotenv import load_dotenv
-from math import ceil
 
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 discord.utils.setup_logging()
